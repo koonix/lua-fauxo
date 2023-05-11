@@ -1,0 +1,40 @@
+name: Publish rockspecs
+
+on:
+  workflow_dispatch: {}
+  push:
+    branches:
+      - master
+
+jobs:
+  push_to_luarocks:
+    name: Push rockspecs to LuaRocks
+    runs-on: ubuntu-latest
+    permissions: { contents: read }
+    steps:
+
+      - name: Check out the repo
+        uses: actions/checkout@v3
+
+      - name: Install Lua
+        uses: leafo/gh-actions-lua@v9
+
+      - name: Install LuaRocks
+        uses: leafo/gh-actions-luarocks@v4
+
+      - name: Install dkjson (required by `luarocks upload`)
+        run: luarocks install dkjson
+
+      - name: Upload rockspecs
+        run: |
+          for spec in ./rockspecs/*.rockspec; do
+            localspec=${spec##*/}
+            rockname=${localspec%-*}
+            rockname=${rockname%-*}
+            rockver=${localspec%.*}
+            rockver=${rockver#"${rockname}-"}
+            luarocks download --rockspec "$rockname" "$rockver" &&
+              cmp "$spec" "$localspec" &&
+              continue ||:
+            luarocks upload "$spec" --force --api-key "${{ secrets.LUAROCKS_API_KEY }}"
+          done
