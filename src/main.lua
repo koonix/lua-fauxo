@@ -1,5 +1,5 @@
 local M = {}
-local pl = require('pl.import_into')()
+local pl = require("pl.import_into")()
 
 -----
 -----
@@ -13,7 +13,7 @@ function M.class:newclass(overrides)
 	setmetatable(proxy, {
 		__index = M.morph(self, overrides),
 		__newindex = function()
-			error('attempt to mutate a class')
+			error("attempt to mutate a class")
 		end,
 	})
 	return proxy
@@ -26,7 +26,7 @@ end
 
 -- morph the given subtable of the object with the given 'overrides' table
 function M.class:morph(key, overrides)
-	return self:new{ [key] = M.morph(self[key], overrides) }
+	return self:new({ [key] = M.morph(self[key], overrides) })
 end
 
 -- append the given items to the specified list-like subtable
@@ -59,15 +59,13 @@ M.cache = {
 
 -- add the given key and value to the cache
 function M.cache:set(key, value)
-	self.result_cache[self:tuid{ key }] = { value }
+	self.result_cache[self:tuid({ key })] = { value }
 end
 
 -- return the value of the given key
 function M.cache:get(key)
-	local value = self.result_cache[self:tuid{ key }]
-	return
-		value and true or false,
-		value and value[1] or nil
+	local value = self.result_cache[self:tuid({ key })]
+	return value and true or false, value and value[1] or nil
 end
 
 -- return a uid (an empty table) for the given table
@@ -92,7 +90,9 @@ function M.cache:dspairs(t)
 		table.insert(keys, self:digest(k))
 		table.insert(values, self:digest(v))
 	end
-	table.sort(keys, function(a, b) return tostring(a) < tostring(b) end)
+	table.sort(keys, function(a, b)
+		return tostring(a) < tostring(b)
+	end)
 	local i = 0
 	return function()
 		i = i + 1
@@ -103,11 +103,11 @@ end
 -- return a digest for the given value
 function M.cache:digest(v)
 	local type = type(v)
-	if type == 'number' then
+	if type == "number" then
 		return v
-	elseif type == 'table' then
+	elseif type == "table" then
 		return self:tuid(v)
-	elseif type == 'function' then
+	elseif type == "function" then
 		return type .. M.fndigest(v)
 	else
 		return type .. tostring(v)
@@ -121,7 +121,7 @@ end
 function M.memoize(fn)
 	local cache = M.cache:new()
 	return function(...)
-		local params = {...}
+		local params = { ... }
 		local success, results = cache:get(params)
 		if not success then
 			results = { fn(...) }
@@ -134,12 +134,12 @@ end
 -- return an rmni()-ed deepcopy of the 'original' table
 function M.morph(original, overrides)
 	local new = M.rmni(pl.tablex.deepcopy(original))
-	if type(overrides) == 'table' then
+	if type(overrides) == "table" then
 		for k, v in pairs(overrides) do
 			new[k] = pl.tablex.deepcopy(v)
 		end
-	elseif type(overrides) ~= 'nil' then
-		error('the second argument to morph() should be a table or nil')
+	elseif type(overrides) ~= "nil" then
+		error("the second argument to morph() should be a table or nil")
 	end
 	return new
 end
@@ -147,10 +147,12 @@ end
 -- return a string representation of the given function.
 -- the digest is the same for pure lua functions with the same bytecode.
 function M.fndigest(fn)
-	local success, dump = pcall(function() return string.dump(fn) end)
-	dump = success and dump or ''
-	local noups = ( debug.getinfo(fn).nups == 0 )
-	local address = ( dump and noups ) and '' or tostring(fn)
+	local success, dump = pcall(function()
+		return string.dump(fn)
+	end)
+	dump = success and dump or ""
+	local noups = (debug.getinfo(fn).nups == 0)
+	local address = (dump and noups) and "" or tostring(fn)
 	return address .. dump
 end
 
