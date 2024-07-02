@@ -152,7 +152,7 @@ function M.fndigest(fn)
 	end)
 	dump = success and dump or ""
 	local noups = (debug.getinfo(fn).nups == 0)
-	local address = (dump and noups) and "" or tostring(fn)
+	local address = (success and noups) and "" or tostring(fn)
 	return address .. dump
 end
 
